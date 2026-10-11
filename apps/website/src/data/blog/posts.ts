@@ -1,3 +1,4 @@
+import { body as body_three_widgets_under_the_bus, ruBody as ruBody_three_widgets_under_the_bus } from './bodies/three-widgets-under-the-bus'
 import { body as body_a_3_mb_compiler_spec_to_aarch64_in_5_ms, ruBody as ruBody_a_3_mb_compiler_spec_to_aarch64_in_5_ms } from './bodies/a-3-mb-compiler-spec-to-aarch64-in-5-ms'
 import { body as body_actors_beat_the_loop_on_recovery_not_everywhere, ruBody as ruBody_actors_beat_the_loop_on_recovery_not_everywhere } from './bodies/actors-beat-the-loop-on-recovery-not-everywhere'
 import { body as body_from_a_minute_to_a_second, ruBody as ruBody_from_a_minute_to_a_second } from './bodies/from-a-minute-to-a-second'
@@ -133,6 +134,7 @@ const bodies: Record<string, PostBody> = {
   'tri-cast-from-command-to-card': { body: body_tri_cast_from_command_to_card, ruBody: ruBody_tri_cast_from_command_to_card },
   'the-fpga-flow-layer-by-layer': { body: body_the_fpga_flow_layer_by_layer, ruBody: ruBody_the_fpga_flow_layer_by_layer },
   'bypass-or-a-broken-shift': { body: body_bypass_or_a_broken_shift, ruBody: ruBody_bypass_or_a_broken_shift },
+  'three-widgets-under-the-bus': { body: body_three_widgets_under_the_bus, ruBody: ruBody_three_widgets_under_the_bus },
   'the-back-half-of-openxc7-from-a-spec': { body: body_the_back_half_of_openxc7_from_a_spec, ruBody: ruBody_the_back_half_of_openxc7_from_a_spec },
   'tri-mined-not-sold': { body: body_tri_mined_not_sold, ruBody: ruBody_tri_mined_not_sold },
   'how-to-join-the-swarm': { body: body_how_to_join_the_swarm, ruBody: ruBody_how_to_join_the_swarm },
