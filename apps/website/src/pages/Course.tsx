@@ -8,7 +8,7 @@ import CourseShelf from '../components/CourseShelf'
 import { shareTagged } from '../lib/shareTags'
 import { COURSE, COURSES, type Course as CourseT, type CourseLesson } from '../lib/course.generated'
 import { LADDER, type LadderSay } from '../lib/courseLadder.generated'
-import { KEY_PARAM, ORDER_PARAM, STEP, notePromo, checkKey, checkoutOffer, courseState, freeLeft, openCourse, readOrder, startCheckout, type Offer, readKeys, readOpened, reportDone, saveKeys, startLink, type Keys, type Opened } from '../lib/courseLadder'
+import { KEY_PARAM, ORDER_PARAM, STEP, notePromo, checkKey, checkoutOffer, courseState, freeLeft, openCourse, readOrder, startCheckout, startTonCheckout, type Offer, type TonTransfer, readKeys, readOpened, reportDone, saveKeys, startLink, type Keys, type Opened } from '../lib/courseLadder'
 import './Course.css'
 
 // Every word, the order of the courses and lessons and the widget each one opens
@@ -410,7 +410,9 @@ function useLadder(C: CourseT, allDone: string[]) {
   const [offer, setOffer] = useState<Offer>({ on: false })
   // Back from Robokassa with ?order=: 'waiting' while the render has not heard the payment yet,
   // 'slow' after half a minute of it, 'done' once the key is in hand.
-  const [paying, setPaying] = useState<'idle' | 'waiting' | 'slow' | 'done'>('idle')
+  const [paying, setPaying] = useState<'idle' | 'waiting' | 'slow' | 'done' | 'expired'>('idle')
+  // A TON order in progress: what to send, where, with which comment.
+  const [ton, setTon] = useState<TonTransfer | null>(null)
 
   useEffect(() => notePromo(search), [search])
 
@@ -430,10 +432,22 @@ function useLadder(C: CourseT, allDone: string[]) {
     setPaying('waiting')
     void (async () => {
       // The render books the payment when Robokassa tells it, not when this browser comes back:
-      // ask until it has, for up to ten minutes.
-      while (live && Date.now() - started < 600_000) {
+      // ask until it has, for up to ten minutes. A TON order holds its amount for an hour and the
+      // render still looks a quarter of an hour after, so a TON order is asked for that long.
+      let limit = 600_000
+      while (live && Date.now() - started < limit) {
         const r = await readOrder(order)
         if (!live) return
+        if (r.ok && r.status === 'expired') {
+          setTon(null)
+          setPaying('expired')
+          navigate(pathname, { replace: true })
+          return
+        }
+        if (r.ton) {
+          setTon(r.ton)
+          limit = 75 * 60_000
+        }
         if (r.ok && r.status === 'paid' && r.key) {
           const held: Keys = { ...readKeys(), paid: r.key }
           saveKeys(held)
@@ -441,11 +455,12 @@ function useLadder(C: CourseT, allDone: string[]) {
           setKeys(held)
           setValid(now)
           setOpened((o) => openCourse(C.id, o, now))
+          setTon(null)
           setPaying('done')
           navigate(pathname, { replace: true })
           return
         }
-        if (Date.now() - started > 30_000) setPaying('slow')
+        if (!r.ton && Date.now() - started > 30_000) setPaying('slow')
         await new Promise((res) => setTimeout(res, 2500))
       }
     })()
@@ -502,7 +517,16 @@ function useLadder(C: CourseT, allDone: string[]) {
     if (r.ok && r.url) window.location.assign(r.url)
     return r
   }
-  return { state, open, checking, bad, reportKey, inClub: valid.paid, left: freeLeft(opened), offer, paying, pay }
+  const payTon = async (email: string, lang: string) => {
+    const r = await startTonCheckout(email, C.route, lang)
+    if (r.ok && r.order && r.ton) {
+      setTon(r.ton)
+      // The order rides in the address, so a reload keeps waiting for the same payment.
+      navigate(`${pathname}?${ORDER_PARAM}=${encodeURIComponent(r.order)}`, { replace: true })
+    }
+    return r
+  }
+  return { state, open, checking, bad, reportKey, inClub: valid.paid, left: freeLeft(opened), offer, paying, pay, ton, payTon }
 }
 
 /**
@@ -531,29 +555,32 @@ function ClubTeaser({ C, lang }: { C: CourseT; lang: Lang }) {
  * The club paid here, without the bot (owner, 2026-10-13): one field, one button, the price on
  * the button. The email only goes to Robokassa for its receipt; the key comes back to this page.
  */
-function PayForm({ lang, ladder }: { lang: Lang; ladder: ReturnType<typeof useLadder> }) {
+function PayForm({ lang, ladder, rub, ton }: { lang: Lang; ladder: ReturnType<typeof useLadder>; rub: boolean; ton: boolean }) {
   const say = LADDER.say[lang] as LadderSay
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const go = async (via: 'rub' | 'ton') => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError(say.PAY_BAD_EMAIL)
       return
     }
     setBusy(true)
     setError(null)
-    const r = await ladder.pay(email.trim(), lang)
-    if (!r.ok) {
-      setBusy(false)
-      setError(fmt(say.PAY_ERROR, r.reason ?? 'unknown'))
-    }
+    const r = via === 'ton' ? await ladder.payTon(email.trim(), lang) : await ladder.pay(email.trim(), lang)
+    // Roubles leave for Robokassa; TON stays here and shows where to send. Either way a
+    // failure gives the buttons back.
+    if (!r.ok || via === 'ton') setBusy(false)
+    if (!r.ok) setError(fmt(say.PAY_ERROR, r.reason ?? 'unknown'))
+  }
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    void go(rub ? 'rub' : 'ton')
   }
   return (
-    <form className="course-pay" onSubmit={(e) => void submit(e)}>
+    <form className="course-pay" onSubmit={submit}>
       <label className="course-label" htmlFor="course-pay-email">
-        {say.PAY_EMAIL}
+        {rub ? say.PAY_EMAIL : say.TON_EMAIL}
       </label>
       <div className="course-pay-row">
         <input
@@ -569,13 +596,64 @@ function PayForm({ lang, ladder }: { lang: Lang; ladder: ReturnType<typeof useLa
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button type="submit" className="course-btn is-primary" disabled={busy}>
-          {fmt(say.PAY_PRESS, ladder.offer.rub ?? 0)}
-        </button>
+        {rub ? (
+          <button type="submit" className="course-btn is-primary" disabled={busy}>
+            {fmt(say.PAY_PRESS, ladder.offer.rub ?? 0)}
+          </button>
+        ) : null}
+        {ton ? (
+          <button type={rub ? 'button' : 'submit'} className={rub ? 'course-btn' : 'course-btn is-primary'} disabled={busy} onClick={rub ? () => void go('ton') : undefined}>
+            {fmt(say.TON_PRESS, ladder.offer.ton?.amount ?? 0)}
+          </button>
+        ) : null}
       </div>
       {error ? <p className="course-desc course-ladder-bad">{error}</p> : null}
-      <p className="course-desc">{say.PAY_SAFE}</p>
+      {rub ? <p className="course-desc">{say.PAY_SAFE}</p> : null}
+      {ton ? <p className="course-desc">{say.TON_LINE}</p> : null}
     </form>
+  )
+}
+
+/** A TON order waiting for its payment: the three things to send, each one press to copy. */
+function TonWait({ lang, t }: { lang: Lang; t: TonTransfer }) {
+  const say = LADDER.say[lang] as LadderSay
+  const [copied, setCopied] = useState<string | null>(null)
+  const copy = (what: string, text: string) => {
+    void navigator.clipboard?.writeText(text).then(() => setCopied(what), () => undefined)
+  }
+  const until = t.expiresAt ? new Date(t.expiresAt) : null
+  const rows: [string, string, string][] = [
+    ['amount', say.TON_AMOUNT, String(t.amount)],
+    ['address', say.TON_ADDRESS, t.address],
+    ['comment', say.TON_COMMENT, t.comment],
+  ]
+  return (
+    <div className="course-pay course-ton">
+      <p className="course-desc">{fmt(say.TON_SEND, t.amount)}</p>
+      <dl className="course-ton-rows">
+        {rows.map(([what, label, value]) => (
+          <div key={what} className="course-ton-row">
+            <dt>{label}</dt>
+            <dd>
+              <code>{value}</code>
+              <button type="button" className="course-link" onClick={() => copy(what, value)}>
+                {copied === what ? say.TON_COPIED : say.TON_COPY}
+              </button>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <div className="course-pay-row">
+        <a className="course-btn is-primary" href={t.link}>
+          {say.TON_OPEN}
+        </a>
+      </div>
+      {until && !Number.isNaN(until.getTime()) ? (
+        <p className="course-counter" aria-live="polite">
+          {fmt(say.TON_UNTIL, until.toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' }))}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -585,6 +663,8 @@ function LadderGate({ C, lang, ladder }: { C: CourseT; lang: Lang; ladder: Retur
   const step = state.step
   // Roubles for Russian-language readers only (owner, 2026-10-13); everyone else keeps the bot's Stars.
   const rub = ladder.offer.on && lang === 'ru'
+  // TON for every language, once the render has a wallet and a rate (owner, 2026-10-13: "or with crypto").
+  const ton = ladder.offer.ton?.on === true
   return (
     <section className="course-hero course-ladder" aria-live="polite">
       <p className="course-kicker">{fmt(say.RUNG, state.rung)}</p>
@@ -596,12 +676,15 @@ function LadderGate({ C, lang, ladder }: { C: CourseT; lang: Lang; ladder: Retur
         <p className="course-desc">{ladder.left === 1 ? say.LAST_FREE : fmt(say.FREE_SLOT, state.rung)}</p>
       ) : null}
       {bad ? <p className="course-desc course-ladder-bad">{fmt(say.KEY_BAD, bad)}</p> : null}
-      {ladder.paying === 'waiting' || ladder.paying === 'slow' ? (
+      {ladder.paying === 'expired' ? <p className="course-desc course-ladder-bad">{say.TON_EXPIRED}</p> : null}
+      {(ladder.paying === 'waiting' || ladder.paying === 'slow') && ladder.ton ? (
+        <TonWait lang={lang} t={ladder.ton} />
+      ) : ladder.paying === 'waiting' || ladder.paying === 'slow' ? (
         <p className="course-counter" aria-live="polite">
           {ladder.paying === 'slow' ? say.PAY_SLOW : say.PAY_WAITING}
         </p>
-      ) : step === STEP.paid && rub && !checking ? (
-        <PayForm lang={lang} ladder={ladder} />
+      ) : step === STEP.paid && (rub || ton) && !checking ? (
+        <PayForm lang={lang} ladder={ladder} rub={rub} ton={ton} />
       ) : null}
       <div className="course-hero-actions">
         {checking && step !== STEP.free ? (
@@ -610,7 +693,7 @@ function LadderGate({ C, lang, ladder }: { C: CourseT; lang: Lang; ladder: Retur
           <button type="button" className="course-btn is-primary" onClick={ladder.open}>
             {say.OPEN}
           </button>
-        ) : step === STEP.paid && rub ? (
+        ) : step === STEP.paid && (rub || ton) ? (
           <a className="course-link" href={startLink(step, C.route)} target="_blank" rel="noopener noreferrer">
             {say.PAY_OR_BOT}
           </a>
@@ -633,7 +716,7 @@ function LadderGate({ C, lang, ladder }: { C: CourseT; lang: Lang; ladder: Retur
         </p>
       ) : null}
       {step !== STEP.free ? <p className="course-desc">{say.BOT_SHARES}</p> : null}
-      {step === STEP.paid && !rub ? <p className="course-desc">{say.PAID_LATER}</p> : null}
+      {step === STEP.paid && !rub && !ton ? <p className="course-desc">{say.PAID_LATER}</p> : null}
       <p className="course-shape">{say.LADDER}</p>
     </section>
   )
