@@ -13,7 +13,8 @@
 ; What is honest here: the lesson words are in this site's bundle and on its share pages, so
 ; the ladder orders the reader's way, it does not hide the words (CONTENT_HIDDEN in the rules).
 ; Paying on the site in roubles goes through the render (GET/POST /api/course/checkout) once
-; it has a price set; until then, and in dollars or crypto always, the club is paid in the bot.
+; it has a price set; until then the club is paid in the bot. Any reader may pay in TON on the
+; site once the render has a wallet and a TON rate; dollars by card are paid in the bot.
 ; ASCII only (L3), English only (LANG-EN).
 ; phi^2 + 1/phi^2 = 3 | TRINITY
 
@@ -40,7 +41,7 @@ pub const SAY_BOT_SHARES : str = "From this step on, the course author sees whic
 pub const SAY_PAID_TITLE : str = "This course opens with the club";
 pub const SAY_PAID_LINE : str = "The club is paid in Telegram Stars in the bot, which shows the price. Already in the club? The same button hands you the key.";
 pub const SAY_PAID_PRESS : str = "Join the club in Telegram";
-pub const SAY_PAID_LATER : str = "Paying here in roubles, dollars or crypto is not built yet.";
+pub const SAY_PAID_LATER : str = "Paying here by card in dollars is not built yet.";
 ; The teaser a reader meets INSIDE an open course (lesson one, below the pager): the gate
 ; above names the club only when a course is locked, and most readers never climb that far.
 ; No price here either -- the bot's card says it, same honesty as SAY_PAID_LINE.
@@ -61,6 +62,23 @@ pub const SAY_PAY_WAITING : str = "Waiting for the payment to be confirmed...";
 pub const SAY_PAY_SLOW : str = "The payment is not confirmed yet. If you paid, this page keeps checking; you can also reload it later.";
 pub const SAY_PAY_DONE : str = "Payment received. Welcome to the club.";
 pub const SAY_PAY_OR_BOT : str = "Or pay in Telegram Stars in our bot";
+; Paying in TON on the site (owner, 2026-10-13: "or with crypto"). Any language: the render
+; answers GET /api/course/checkout with ton.on and the amount at the current TON rate, and
+; the order holds that amount for an hour. The comment is how the render finds the payment.
+; Only TON is taken here, never $TRI: the token is not sold (golden-chain-international
+; FACTS.md s.6).
+pub const SAY_TON_LINE : str = "Or pay in TON from any wallet: no card and no Telegram. The amount is the club price at the current TON rate.";
+pub const SAY_TON_EMAIL : str = "Email, so the club is yours on any device";
+pub const SAY_TON_PRESS : str = "Pay {0} TON";
+pub const SAY_TON_SEND : str = "Send exactly {0} TON to this address with this comment. The comment is how we find your payment.";
+pub const SAY_TON_ADDRESS : str = "Address";
+pub const SAY_TON_AMOUNT : str = "Amount";
+pub const SAY_TON_COMMENT : str = "Comment";
+pub const SAY_TON_COPY : str = "Copy";
+pub const SAY_TON_COPIED : str = "Copied";
+pub const SAY_TON_OPEN : str = "Open in a wallet";
+pub const SAY_TON_UNTIL : str = "The amount holds until {0}. This page opens the course by itself once the payment arrives.";
+pub const SAY_TON_EXPIRED : str = "This TON order ran out before a payment arrived. Start a new one; if you already sent TON, write to us in the bot with the comment.";
 ; The catalog (#/courses), the header link and the counter of free courses left: a reader
 ; should know what a press will do before pressing it (owner, 2026-10-13: the navigation
 ; was too hard to follow).

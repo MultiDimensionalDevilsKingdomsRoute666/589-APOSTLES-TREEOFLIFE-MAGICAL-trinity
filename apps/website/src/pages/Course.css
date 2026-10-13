@@ -756,3 +756,38 @@
 .course-shelf .course-catalog {
   margin-top: 20px;
 }
+
+/* A TON order: amount, address and comment, each one press to copy. */
+.course-ton-rows {
+  margin: 12px 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.course-ton-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.course-ton-row dt {
+  color: #a6a6a6;
+}
+.course-ton-row dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 0;
+}
+.course-ton-row code {
+  overflow-wrap: anywhere;
+  color: #fff;
+}
+.course-ton-row button.course-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}

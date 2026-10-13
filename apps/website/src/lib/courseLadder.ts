@@ -103,17 +103,51 @@ export async function checkKey(k: string): Promise<KeyCheck> {
   }
 }
 
-/** The render's on-site checkout: on only once it has a rouble price and Robokassa set. */
-export type Offer = { on: boolean; rub?: number; days?: number }
-export type Order = { ok: boolean; status?: 'pending' | 'paid'; key?: string; until?: string; reason?: string }
+/**
+ * The render's on-site checkout. Roubles (on) only once it has Robokassa set; TON (ton.on) only
+ * once it has a wallet and a TON rate. The two switch on independently.
+ */
+export type Offer = { on: boolean; rub?: number; days?: number; ton?: { on: boolean; amount?: number } }
+/** Where and how much to send for a TON order, as the render answers it. */
+export type TonTransfer = { address: string; amount: number; nano: string; comment: string; link: string; expiresAt?: string }
+export type Order = { ok: boolean; status?: 'pending' | 'paid' | 'expired'; key?: string; until?: string; reason?: string; ton?: TonTransfer }
+
+function readTonTransfer(t: unknown): TonTransfer | undefined {
+  const o = t as Partial<TonTransfer> | null
+  if (!o || typeof o.address !== 'string' || typeof o.comment !== 'string' || typeof o.nano !== 'string') return undefined
+  if (typeof o.amount !== 'number' || !(o.amount > 0)) return undefined
+  // Only a TON transfer link is ever handed to the wallet button.
+  if (typeof o.link !== 'string' || !o.link.startsWith('ton://transfer/')) return undefined
+  return { address: o.address, amount: o.amount, nano: o.nano, comment: o.comment, link: o.link, expiresAt: typeof o.expiresAt === 'string' ? o.expiresAt : undefined }
+}
 
 export async function checkoutOffer(): Promise<Offer> {
   try {
     const r = await fetch(`${LADDER.renderBase}/api/course/checkout`, { credentials: 'omit' })
     const body = (await r.json()) as Offer
-    return body && body.on === true && Number.isInteger(body.rub) && (body.rub ?? 0) > 0 ? body : { on: false }
+    const rubOn = Boolean(body && body.on === true && Number.isInteger(body.rub) && (body.rub ?? 0) > 0)
+    const t = body?.ton
+    const ton = t && t.on === true && typeof t.amount === 'number' && t.amount > 0 ? { on: true, amount: t.amount } : { on: false }
+    return rubOn ? { on: true, rub: body.rub, days: body.days, ton } : { on: false, days: body?.days, ton }
   } catch {
-    return { on: false }
+    return { on: false, ton: { on: false } }
+  }
+}
+
+/** A TON order for the club: the address, the amount and the comment to send it with. */
+export async function startTonCheckout(email: string, route: string, lang: string): Promise<{ ok: boolean; order?: string; ton?: TonTransfer; reason?: string }> {
+  try {
+    const r = await fetch(`${LADDER.renderBase}/api/course/checkout`, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, route, lang, from: readPromo(), source: readSource(), pay: 'ton' }),
+    })
+    const body = await r.json()
+    const ton = readTonTransfer(body?.ton)
+    return body && body.ok === true && typeof body.order === 'string' && ton ? { ok: true, order: body.order, ton } : { ok: false, reason: body?.reason ?? `http_${r.status}` }
+  } catch {
+    return { ok: false, reason: 'unreachable' }
   }
 }
 
@@ -138,7 +172,7 @@ export async function readOrder(id: string): Promise<Order> {
   try {
     const r = await fetch(`${LADDER.renderBase}/api/course/checkout/order?id=${encodeURIComponent(id)}`, { credentials: 'omit' })
     const body = (await r.json()) as Order
-    return body && typeof body.ok === 'boolean' ? body : { ok: false, reason: 'unreadable' }
+    return body && typeof body.ok === 'boolean' ? { ...body, ton: readTonTransfer(body.ton) } : { ok: false, reason: 'unreadable' }
   } catch {
     return { ok: false, reason: 'unreachable' }
   }
