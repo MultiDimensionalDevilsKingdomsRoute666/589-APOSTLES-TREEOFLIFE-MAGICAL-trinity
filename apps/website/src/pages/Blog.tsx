@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
@@ -7,6 +7,11 @@ import TerminalCast from '../components/TerminalCast'
 import { publishedPosts, postBySlug } from '../data/blog/index'
 import type { Block, Post, PostBody, PostMeta } from '../data/blog/types'
 import { useI18n } from '../i18n/context'
+import { shareTagged } from '../lib/shareTags'
+
+// The courses under every post (owner, 2026-10-13: adverts across the blog). Lazy: the course
+// list is ~850 KB, so it loads after the article and never delays it.
+const CourseShelf = lazy(() => import('../components/CourseShelf'))
 
 // The blog was English-only whatever the language switcher said. These are the
 // page's own words; a post's words travel with the post, in its `ru` field.
@@ -486,18 +491,18 @@ function Share({ post, lang }: { post: PostMeta; lang: string }) {
   const t = ui(lang)
   const [copied, setCopied] = useState(false)
   const url = postUrl(post.slug, lang)
-  const u = encodeURIComponent(url)
+  const tag = (source: string) => encodeURIComponent(shareTagged(url, source, 'blog', post.slug))
   const title = encodeURIComponent(post.title)
   const hashtags = post.tags.map(blogHashtag)
   const xHashtag = encodeURIComponent(hashtags[0].slice(1))
   const telegramText = encodeURIComponent(`${post.title}\n\n${hashtags.slice(0, 3).join(' ')}`)
 
   const targets = [
-    { name: 'X', href: `https://twitter.com/intent/tweet?url=${u}&text=${title}&hashtags=${xHashtag}` },
-    { name: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
-    { name: 'Telegram', href: `https://t.me/share/url?url=${u}&text=${telegramText}` },
-    { name: 'Hacker News', href: `https://news.ycombinator.com/submitlink?u=${u}&t=${title}` },
-    { name: 'Reddit', href: `https://www.reddit.com/submit?url=${u}&title=${title}` },
+    { name: 'X', href: `https://twitter.com/intent/tweet?url=${tag('x')}&text=${title}&hashtags=${xHashtag}` },
+    { name: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${tag('linkedin')}` },
+    { name: 'Telegram', href: `https://t.me/share/url?url=${tag('telegram')}&text=${telegramText}` },
+    { name: 'Hacker News', href: `https://news.ycombinator.com/submitlink?u=${tag('hackernews')}&t=${title}` },
+    { name: 'Reddit', href: `https://www.reddit.com/submit?url=${tag('reddit')}&title=${title}` },
   ]
 
   return (
@@ -518,7 +523,7 @@ function Share({ post, lang }: { post: PostMeta; lang: string }) {
         <button
           type="button"
           onClick={() => {
-            navigator.clipboard?.writeText(url).then(
+            navigator.clipboard?.writeText(shareTagged(url, 'copy', 'blog', post.slug)).then(
               () => {
                 setCopied(true)
                 window.setTimeout(() => setCopied(false), 2000)
@@ -715,6 +720,9 @@ export function BlogPost() {
         {post.body.map(renderBlock)}
         <Receipts post={post} lang={lang} />
         <Share post={post} lang={lang} />
+        <Suspense fallback={null}>
+          <CourseShelf lang={lang === 'ru' ? 'ru' : 'en'} placement={`blog:${post.slug}`} />
+        </Suspense>
 
         <p style={{ marginTop: '3em' }}>
           <Link to="/blog" className="blog-link">{t.allPosts}</Link>

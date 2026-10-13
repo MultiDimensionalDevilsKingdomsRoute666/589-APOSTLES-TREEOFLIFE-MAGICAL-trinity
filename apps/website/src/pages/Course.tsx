@@ -4,9 +4,11 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { useI18n } from '../i18n/context'
 import Navigation from '../components/Navigation'
 import Footer from '../components/Footer'
+import CourseShelf from '../components/CourseShelf'
+import { shareTagged } from '../lib/shareTags'
 import { COURSE, COURSES, type Course as CourseT, type CourseLesson } from '../lib/course.generated'
 import { LADDER, type LadderSay } from '../lib/courseLadder.generated'
-import { KEY_PARAM, ORDER_PARAM, STEP, checkKey, checkoutOffer, courseState, freeLeft, openCourse, readOrder, startCheckout, type Offer, readKeys, readOpened, reportDone, saveKeys, startLink, type Keys, type Opened } from '../lib/courseLadder'
+import { KEY_PARAM, ORDER_PARAM, STEP, notePromo, checkKey, checkoutOffer, courseState, freeLeft, openCourse, readOrder, startCheckout, type Offer, readKeys, readOpened, reportDone, saveKeys, startLink, type Keys, type Opened } from '../lib/courseLadder'
 import './Course.css'
 
 // Every word, the order of the courses and lessons and the widget each one opens
@@ -168,12 +170,13 @@ const shareOf = (C: CourseT, lang: Lang, id?: string) => `${lang === 'ru' ? '/ru
 function CourseShare({ C, lang, say, id, title }: { C: CourseT; lang: Lang; say: Say; id?: string; title: string }) {
   const path = shareOf(C, lang, id)
   const url = `https://t27.ai${path}`
-  const u = encodeURIComponent(url)
+  // Each button's link says where it was shared (utm_source=<platform>, lib/shareTags.ts).
+  const tag = (source: string) => encodeURIComponent(shareTagged(url, source, 'course', C.route))
   const text = encodeURIComponent(title)
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url)
+      await navigator.clipboard.writeText(shareTagged(url, 'copy', 'course', C.route))
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1400)
     } catch {
@@ -189,13 +192,13 @@ function CourseShare({ C, lang, say, id, title }: { C: CourseT; lang: Lang; say:
       <button type="button" className="course-share-pill" onClick={() => void copy()} title={say.SHARE} aria-label={say.SHARE}>
         {copied ? '✓' : '⧉'}
       </button>
-      <a className="course-share-pill" href={`https://twitter.com/intent/tweet?url=${u}&text=${text}`} target="_blank" rel="noopener noreferrer">
+      <a className="course-share-pill" href={`https://twitter.com/intent/tweet?url=${tag('x')}&text=${text}`} target="_blank" rel="noopener noreferrer">
         X
       </a>
-      <a className="course-share-pill" href={`https://t.me/share/url?url=${u}&text=${text}`} target="_blank" rel="noopener noreferrer">
+      <a className="course-share-pill" href={`https://t.me/share/url?url=${tag('telegram')}&text=${text}`} target="_blank" rel="noopener noreferrer">
         Telegram
       </a>
-      <a className="course-share-pill" href={`https://www.linkedin.com/sharing/share-offsite/?url=${u}`} target="_blank" rel="noopener noreferrer">
+      <a className="course-share-pill" href={`https://www.linkedin.com/sharing/share-offsite/?url=${tag('linkedin')}`} target="_blank" rel="noopener noreferrer">
         LinkedIn
       </a>
     </div>
@@ -409,6 +412,8 @@ function useLadder(C: CourseT, allDone: string[]) {
   // 'slow' after half a minute of it, 'done' once the key is in hand.
   const [paying, setPaying] = useState<'idle' | 'waiting' | 'slow' | 'done'>('idle')
 
+  useEffect(() => notePromo(search), [search])
+
   useEffect(() => {
     let live = true
     void checkoutOffer().then((o) => live && setOffer(o))
@@ -620,6 +625,13 @@ function LadderGate({ C, lang, ladder }: { C: CourseT; lang: Lang; ladder: Retur
           </Link>
         ) : null}
       </div>
+      {step === STEP.paid && !checking ? (
+        <p className="course-desc">
+          <a className="course-link" href={startLink(STEP.paid, C.route)} target="_blank" rel="noopener noreferrer">
+            {say.SIGN_IN}
+          </a>
+        </p>
+      ) : null}
       {step !== STEP.free ? <p className="course-desc">{say.BOT_SHARES}</p> : null}
       {step === STEP.paid && !rub ? <p className="course-desc">{say.PAID_LATER}</p> : null}
       <p className="course-shape">{say.LADDER}</p>
@@ -689,8 +701,10 @@ export default function Course() {
             <Overview C={C} lang={lang} say={say} done={done} shared={shared} />
           </>
         )}
+        {/* Other courses at the foot of every course page (owner, 2026-10-13). */}
+        <CourseShelf lang={lang} placement={`course:${C.route}`} exclude={C.id} />
       </main>
-      <Footer />
+      <Footer promo={false} />
     </div>
   )
 }

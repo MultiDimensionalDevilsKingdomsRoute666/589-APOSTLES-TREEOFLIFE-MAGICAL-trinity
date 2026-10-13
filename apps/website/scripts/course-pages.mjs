@@ -68,6 +68,11 @@ export function loadCourses(file = join(SITE, 'src/lib/course.generated.ts')) {
 /** Site path of a page: the course's share path, or learn/<lesson>/; under ru/ for Russian. */
 export const pathOf = (C, lang, id) => `${lang === 'ru' ? 'ru/' : ''}${id ? `${BASE}/${id}/` : C.share}`
 const urlOf = (C, lang, id) => `${ORIGIN}/${pathOf(C, lang, id)}`
+// A shared link carries its utm tags (src/lib/shareTags.ts) to this page, and the app counts
+// them on arrival (src/lib/trafficArrival.ts) -- but this page is not the app. So its links
+// into the app take the query along, before the '#', where the app reads it.
+const CARRY_UTM = `<script>(function(){var q=location.search;if(!/[?&]utm_source=/.test(q))return;document.querySelectorAll('a[href^="/#/"]').forEach(function(a){a.setAttribute('href','/'+q+a.getAttribute('href').slice(1))})})()</script>`
+
 export const appOf = (C, id) => `/#/${C.route}${id ? `/${id}` : ''}`
 /** A neighbouring course's lesson page: lesson pages live under learn/ whatever the course. */
 const lessonPath = (lang, id) => `${lang === 'ru' ? 'ru/' : ''}${BASE}/${id}/`
@@ -248,6 +253,7 @@ ${body}
 <section><h2>${esc(say.ALL)}</h2><ul class="outline">${outline}</ul></section>
 <footer><p><a href="/${C.source.publicSpec.replace(/^public\//, '')}">${esc(say.SOURCE)}</a></p><p>${esc(say.WIDGET_LANG)}</p></footer>
 </main>
+${CARRY_UTM}
 </body>
 </html>
 `

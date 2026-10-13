@@ -735,3 +735,24 @@
   opacity: 0.6;
   cursor: progress;
 }
+
+/* Other courses, at the foot of a course page or a blog post. */
+.course-shelf {
+  margin: 64px 0 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+.course-shelf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.course-shelf-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.course-shelf .course-catalog {
+  margin-top: 20px;
+}

@@ -8,7 +8,7 @@
 ; i18n/course-ladder.ru.json, every key, no extra) and where the render answers.
 ; Owner, 2026-10-11: any one course free, the second for the Telegram bot, the third free,
 ; the fourth for the club; every reader past the bot tracked in the CRM.
-; Owner, 2026-10-13: any three courses free, then payment; the bot rung lost every reader
+; Owner, 2026-10-13: any three courses free, with no sign-up, then payment; the bot rung lost every reader
 ; (rules VERSION 2), so no rung sends a reader to the bot for a key any more.
 ; What is honest here: the lesson words are in this site's bundle and on its share pages, so
 ; the ladder orders the reader's way, it does not hide the words (CONTENT_HIDDEN in the rules).
@@ -28,7 +28,7 @@ pub const RENDER_BASE : str = "https://vibee-render-production.up.railway.app";
 pub const OPEN_KEY : str = "t27-course-open";
 pub const KEYS_KEY : str = "t27-course-keys";
 
-pub const SAY_LADDER : str = "The ladder: your first three courses are free, the fourth and every one after it open with the club. You choose which courses are your three.";
+pub const SAY_LADDER : str = "The ladder: your first three courses are free with no sign-up, the fourth and every one after it open with the club. You choose which courses are your three.";
 pub const SAY_RUNG : str = "Rung {0} of your ladder";
 pub const SAY_FREE_TITLE : str = "This course is free for you";
 pub const SAY_FREE_LINE : str = "Open it with one press. Nothing is asked and nothing leaves this browser.";
@@ -64,7 +64,7 @@ pub const SAY_PAY_OR_BOT : str = "Or pay in Telegram Stars in our bot";
 ; was too hard to follow).
 pub const SAY_COURSES : str = "All courses";
 pub const SAY_CATALOG_TITLE : str = "Courses";
-pub const SAY_CATALOG_LEAD : str = "Every course is 27 short lessons in the browser, each with a live widget or a spec you can run. Pick any three and they are free; the club opens the rest.";
+pub const SAY_CATALOG_LEAD : str = "Every course is 27 short lessons in the browser, each with a live widget or a spec you can run. Pick any three and they are free, with no sign-up and no email; the club opens the rest.";
 pub const SAY_FREE_LEFT : str = "Free courses left: {0} of 3";
 pub const SAY_FREE_NONE : str = "Your three free courses are chosen. Every other course opens with the club.";
 pub const SAY_IN_CLUB : str = "You are in the club: every course is open.";
@@ -77,6 +77,18 @@ pub const SAY_DONE_OF : str = "{0} of {1} done";
 pub const SAY_FREE_SLOT : str = "Opening it uses free course {0} of 3.";
 pub const SAY_LAST_FREE : str = "This is your last free course: after it, courses open with the club.";
 pub const SAY_NOT_NOW : str = "Not now: back to the courses";
+; Selling where readers already are (owner, 2026-10-13: other courses at the foot of every
+; course page, a course advert in the footer and on every blog post). Internal links carry
+; ?from=<placement> -- never utm_*, which would overwrite the channel the reader came from --
+; and the placement rides on to the order, so a payment names the shelf that sold it.
+pub const SAY_MORE_TITLE : str = "More courses";
+pub const SAY_PROMO_TITLE : str = "Three courses free, no sign-up";
+pub const SAY_PROMO_LINE : str = "Every lesson runs in the browser, with a live widget or a spec you can run. Any three courses are free, no sign-up.";
+pub const SAY_PROMO_PRESS : str = "See the courses";
+; A reader who joined the club in the bot signs in here with the bot's button: the bot hands
+; back https://t27.ai/#/courses?unlock=<key> and the key stays in this browser.
+pub const SAY_SIGN_IN : str = "Already in the club? Sign in via Telegram";
+pub const SAY_SIGNED_IN : str = "You are signed in: the club key is saved in this browser.";
 pub const SAY_CHECKING : str = "Checking your key...";
 pub const SAY_KEY_BAD : str = "This key did not open the course ({0}). Press the button again for a fresh one.";
 pub const SAY_SHARED : str = "Your finished lessons are shared with the course author.";
