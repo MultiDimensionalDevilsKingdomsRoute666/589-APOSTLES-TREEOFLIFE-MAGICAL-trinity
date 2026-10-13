@@ -9,6 +9,8 @@
 import * as RULES from './courseAccess.gen'
 import { mayOpen, mayReport, staysOpen, stepOf } from './courseAccess.logic'
 import { LADDER } from './courseLadder.generated'
+// The utm_source this session arrived with, as trafficArrival.ts keeps it.
+import { SOURCE_KEY } from './trafficArrival'
 
 /** The courses this reader opened, in the order they were opened, with the rung each took. */
 export type Opened = { id: string; step: number }[]
@@ -122,7 +124,8 @@ export async function startCheckout(email: string, route: string, lang: string):
       method: 'POST',
       credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, route, lang }),
+      // The shelf that sold it and the channel the reader came from: the owner's notice names both.
+      body: JSON.stringify({ email, route, lang, from: readPromo(), source: readSource() }),
     })
     const body = await r.json()
     return body && body.ok === true && typeof body.url === 'string' && body.url.startsWith('https://') ? body : { ok: false, reason: body?.reason ?? `http_${r.status}` }
@@ -142,6 +145,45 @@ export async function readOrder(id: string): Promise<Order> {
 }
 
 export const ORDER_PARAM = 'order'
+
+/**
+ * WHICH SHELF SOLD IT. An internal link to a course carries ?from=<placement> (footer,
+ * blog:<slug>, course:<route>, catalog) inside the hash. Never utm_*: an internal utm tag
+ * overwrites the channel the reader really came from. The first placement of this session is
+ * kept (blog -> catalog -> course names the blog, not the catalog) and sent with an order, so a
+ * payment names the shelf that sold it.
+ */
+export const PROMO_PARAM = 'from'
+const PROMO_KEY = 'traffic:promo'
+
+/** A course link from a shelf: /<route>?from=<placement>. Pure. */
+export function promoTo(route: string, placement: string): string {
+  return `/${route}?${PROMO_PARAM}=${encodeURIComponent(placement)}`
+}
+
+/** Keep the placement this address names, if any. Never throws. */
+export function notePromo(search: string) {
+  const from = new URLSearchParams(search).get(PROMO_PARAM)
+  if (!from || !/^[a-z0-9:_-]{1,80}$/i.test(from)) return
+  try {
+    if (!window.sessionStorage.getItem(PROMO_KEY)) window.sessionStorage.setItem(PROMO_KEY, from)
+  } catch {
+    // no storage: the order goes without its shelf
+  }
+}
+
+function readSession(key: string): string | undefined {
+  try {
+    return window.sessionStorage.getItem(key) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+export const readPromo = () => readSession(PROMO_KEY)
+export const readSource = () => readSession(SOURCE_KEY)
+
+/** The catalog's address in the bot: a club member signs in here with the key it hands back. */
+export const SIGN_IN_ROUTE = 'courses'
 
 /** A finished lesson, sent with the reader's key -- and never without one (may_report). */
 export async function reportDone(key: string | undefined, course: string, lesson: string): Promise<void> {

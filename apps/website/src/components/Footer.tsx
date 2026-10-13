@@ -2,6 +2,8 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { useI18n } from '../i18n/context'
+import { LADDER } from '../lib/courseLadder.generated'
+import { promoTo } from '../lib/courseLadder'
 
 // Smooth scrolling is animation-driven, so it silently does nothing when
 // animations are not running — a hidden or backgrounded tab, or a reader who has
@@ -32,7 +34,51 @@ function goToSection(e: React.MouseEvent, id: string) {
   tick()
 }
 
-export default function Footer() {
+/**
+ * The course advert on every page that is not already selling a course (owner, 2026-10-13:
+ * adverts in the footer). Only the ladder's words, which the header already loads: the course
+ * list itself (course.generated.ts, ~850 KB) stays out of the bundle every page pays for.
+ */
+function CoursePromo({ lang }: { lang: string }) {
+  const say = LADDER.say[lang === 'ru' ? 'ru' : 'en']
+  return (
+    <aside
+      aria-label={say.CATALOG_TITLE}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '1rem 2rem',
+        padding: 'clamp(1rem, 4vw, 1.5rem)',
+        marginBottom: 'clamp(1.5rem, 5vw, 3rem)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+      }}
+    >
+      <div style={{ flex: '1 1 320px' }}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)' }}>{say.PROMO_TITLE}</p>
+        <p style={{ margin: '0.4rem 0 0', color: 'var(--muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>{say.PROMO_LINE}</p>
+      </div>
+      <Link
+        to={promoTo('courses', 'footer')}
+        style={{
+          padding: '0.7rem 1.2rem',
+          borderRadius: '999px',
+          background: 'var(--accent)',
+          color: '#000',
+          fontWeight: 700,
+          textDecoration: 'none',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {say.PROMO_PRESS} →
+      </Link>
+    </aside>
+  )
+}
+
+export default function Footer({ promo = true }: { promo?: boolean } = {}) {
   /* lang нужен подписи «Инвестиции» в списке ссылок: ключа nav[9] в локалях
      нет, и на русской странице там висело английское «Invest». */
   const { t, lang } = useI18n()
@@ -49,6 +95,7 @@ export default function Footer() {
       aria-label="Site footer"
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {promo ? <CoursePromo lang={lang} /> : null}
         {/* Main Footer Content */}
         <div style={{ 
           display: 'grid', 
