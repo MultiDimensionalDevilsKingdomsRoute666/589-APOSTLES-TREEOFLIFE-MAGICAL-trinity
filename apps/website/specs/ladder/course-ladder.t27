@@ -44,8 +44,10 @@ pub const SAY_PAID_LATER : str = "Paying here in roubles, dollars or crypto is n
 ; The teaser a reader meets INSIDE an open course (lesson one, below the pager): the gate
 ; above names the club only when a course is locked, and most readers never climb that far.
 ; No price here either -- the bot's card says it, same honesty as SAY_PAID_LINE.
+; The return is the bot's own balance for generations, never $TRI: the token is not sold
+; and is earned only by verified work (gHashTag/golden-chain-international FACTS.md s.6).
 pub const SAY_CLUB_TITLE : str = "The club opens the rest of the ladder";
-pub const SAY_CLUB_LINE : str = "Every course from the fourth on opens with the club: our one subscription, paid in Telegram Stars in the bot, which shows the price. Part of every payment returns to you as tokens.";
+pub const SAY_CLUB_LINE : str = "Every course from the fourth on opens with the club: our one subscription, paid in Telegram Stars in the bot, which shows the price. Part of every payment returns to your bot balance, to spend on generations in the bot.";
 ; Paying on the site (owner, 2026-10-13: payment without going to the bot). The render answers
 ; GET /api/course/checkout with the price; with no price set there, none of these words show
 ; and the gate keeps the bot button. One payment for the club days, no auto-renewal.
