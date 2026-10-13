@@ -81,6 +81,7 @@ const TechTreePage = lazy(() => import('./pages/TechTreePage.tsx'))
 const HardwareVerification = lazy(() => import('./pages/HardwareVerification.tsx'))
 const Start = lazy(() => import('./pages/Start.tsx'))
 const Course = lazy(() => import('./pages/Course.tsx'))
+const Courses = lazy(() => import('./pages/Courses.tsx'))
 const FpgaTraining = lazy(() => import('./pages/FpgaTraining.tsx'))
 const CaseStudies = lazy(() => import('./pages/CaseStudies.tsx'))
 const GFT = lazy(() => import('./pages/GFT.tsx'))
@@ -144,6 +145,8 @@ createRoot(document.getElementById('root')!).render(
             {/* Each course is a t27 spec (specs/course/courses.t27 names them);
                 the paid training that used to live here moved to /fpga-training. */}
             {/* Every course of specs/course/courses.t27: a hand list held 4 of 7 and "Next course" opened nothing. */}
+            {/* Every course on one page, with what each press will do (owner, 2026-10-13). */}
+            <Route path="/courses" element={<Courses />} />
             {COURSE_ROUTES.flatMap((route) => [
               <Route key={route} path={`/${route}`} element={<Course />} />,
               <Route key={`${route}/lesson`} path={`/${route}/:lessonId`} element={<Course />} />,

@@ -68,6 +68,13 @@ export function courseState(id: string, opened: Opened, valid: { bot: boolean; p
   return { known: false, open: false, rung: opened.length + 1, step, mayOpenNow: mayOpen(step, valid.bot, valid.paid) }
 }
 
+/** How many more courses open free from here: the rules' own step_of, asked rung by rung. */
+export function freeLeft(opened: Opened): number {
+  let n = 0
+  for (let at = opened.length; at < 255 && stepOf(at) === RULES.STEP_FREE; at++) n++
+  return n
+}
+
 /** The opened list with this course added, when its step allows; unchanged otherwise. */
 export function openCourse(id: string, opened: Opened, valid: { bot: boolean; paid: boolean }): Opened {
   if (opened.some((o) => o.id === id)) return opened
@@ -93,6 +100,48 @@ export async function checkKey(k: string): Promise<KeyCheck> {
     return { ok: false, reason: 'unreachable' }
   }
 }
+
+/** The render's on-site checkout: on only once it has a rouble price and Robokassa set. */
+export type Offer = { on: boolean; rub?: number; days?: number }
+export type Order = { ok: boolean; status?: 'pending' | 'paid'; key?: string; until?: string; reason?: string }
+
+export async function checkoutOffer(): Promise<Offer> {
+  try {
+    const r = await fetch(`${LADDER.renderBase}/api/course/checkout`, { credentials: 'omit' })
+    const body = (await r.json()) as Offer
+    return body && body.on === true && Number.isInteger(body.rub) && (body.rub ?? 0) > 0 ? body : { on: false }
+  } catch {
+    return { on: false }
+  }
+}
+
+/** An order for the club, and the Robokassa page to pay it on. */
+export async function startCheckout(email: string, route: string, lang: string): Promise<{ ok: boolean; order?: string; url?: string; reason?: string }> {
+  try {
+    const r = await fetch(`${LADDER.renderBase}/api/course/checkout`, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, route, lang }),
+    })
+    const body = await r.json()
+    return body && body.ok === true && typeof body.url === 'string' && body.url.startsWith('https://') ? body : { ok: false, reason: body?.reason ?? `http_${r.status}` }
+  } catch {
+    return { ok: false, reason: 'unreachable' }
+  }
+}
+
+export async function readOrder(id: string): Promise<Order> {
+  try {
+    const r = await fetch(`${LADDER.renderBase}/api/course/checkout/order?id=${encodeURIComponent(id)}`, { credentials: 'omit' })
+    const body = (await r.json()) as Order
+    return body && typeof body.ok === 'boolean' ? body : { ok: false, reason: 'unreadable' }
+  } catch {
+    return { ok: false, reason: 'unreachable' }
+  }
+}
+
+export const ORDER_PARAM = 'order'
 
 /** A finished lesson, sent with the reader's key -- and never without one (may_report). */
 export async function reportDone(key: string | undefined, course: string, lesson: string): Promise<void> {

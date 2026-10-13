@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // specs/automation/course-access.t27 -- the ladder to the t27 courses: the reader picks
-// any course and it opens free, the second needs the Telegram bot, the third is free
-// again, the fourth and every one after it need the paid club; every reader who reaches
-// the bot is filed in the owner's CRM, and the owner is told, live, each step he takes.
+// any three courses and they open free, the fourth and every one after it need the paid
+// club; every reader who reaches the bot is filed in the owner's CRM, and the owner is
+// told, live, each step they take.
 // Host: 999-multibots-telegraf
 //       apps/vibee-editor/render/src/agent/course-access.ts (the key: mint, check; the
 //       learner row; the CRM person, tag and touch; the owner's live message) and the routes in
@@ -46,6 +46,16 @@
 //       bundle and on its share pages, so the ladder orders the reader's way through
 //       the courses; it does not hide them. CONTENT_HIDDEN says so.
 // UI words stay in the hosts; the spec holds the rules and the numbers.
+// VERSION 2, owner, 2026-10-13 -- "make any three courses free and after that payment
+//       without going to the bot, otherwise clients do not understand what to do in the
+//       bot". Measured before the change: the ladder went live 2026-10-11 and in two days
+//       not one course key was minted (course_learner, the table the first mint creates,
+//       did not exist in the render Postgres), while the bot's thirty-day funnel counted
+//       50 people at /start and 1 club card. The BOT rung was where readers stopped, so
+//       step_of no longer returns it: rungs one to three are FREE, the fourth and every
+//       one after it PAID. STEP_BOT stays a step the render mints and may_open and
+//       stays_open still honour, so a course already opened with a bot key stays open.
+//       Paying on the site is still not built (SITE_CHECKOUT).
 // Claim status: written before any live run; no key has been minted, no reader filed.
 // phi^2 + 1/phi^2 = 3 | TRINITY
 
@@ -54,13 +64,13 @@ module automation::course_access {
     pub const KIND : str = "automation";
     pub const ID : str = "course-access";
     pub const REPO : str = "999-multibots-telegraf";
-    pub const VERSION : u8 = 1;
+    pub const VERSION : u8 = 2;
 
     // ---- The steps ---------------------------------------------------------------------
     pub const STEP_FREE : u8 = 0;
     pub const STEP_BOT : u8 = 1;
     pub const STEP_PAID : u8 = 2;
-    pub const LADDER_RUNGS : u8 = 4;  // free, bot, free, paid; every rung after it is paid
+    pub const LADDER_RUNGS : u8 = 4;  // free, free, free, paid; every rung after it is paid
     pub const COURSES_KNOWN : u8 = 7;  // the catalog today; the ladder does not depend on it
 
     // ---- The bot link ------------------------------------------------------------------
@@ -92,10 +102,8 @@ module automation::course_access {
     pub const RUN_LIVE : bool = false;
 
     // Which step the next course is, given how many this reader has opened already.
+    // No rung is BOT since VERSION 2: the bot step was where readers stopped.
     fn step_of(opened: u8) -> u8 {
-        if opened == 1 {
-            return STEP_BOT;
-        }
         if opened >= 3 {
             return STEP_PAID;
         }
@@ -202,16 +210,25 @@ module automation::course_access {
         assert(may_open(step_of(0), false, false));
     }
 
-    test "the second needs the bot" {
-        assert(step_of(1) == STEP_BOT);
+    test "the second and the third are free too, no bot asked" {
+        assert(step_of(1) == STEP_FREE);
+        assert(step_of(2) == STEP_FREE);
+        assert(may_open(step_of(1), false, false));
+        assert(may_open(step_of(2), false, false));
+    }
+
+    test "no rung is the bot any more" {
+        assert(step_of(0) != STEP_BOT);
+        assert(step_of(1) != STEP_BOT);
+        assert(step_of(2) != STEP_BOT);
+        assert(step_of(3) != STEP_BOT);
+        assert(step_of(255) != STEP_BOT);
+    }
+
+    test "a bot key a reader already holds still opens a bot step" {
         assert(!may_open(STEP_BOT, false, false));
         assert(!may_open(STEP_BOT, false, true));
         assert(may_open(STEP_BOT, true, false));
-    }
-
-    test "the third is free again" {
-        assert(step_of(2) == STEP_FREE);
-        assert(may_open(step_of(2), false, false));
     }
 
     test "the fourth and every one after it need the club" {
@@ -310,8 +327,9 @@ module automation::course_access {
     }
 
     test "VERSION says what the header's last note says" {
-        assert(VERSION == 1);
-        assert(step_of(VERSION) == STEP_BOT);
+        assert(VERSION == 2);
+        assert(step_of(VERSION) == STEP_FREE);
+        assert(step_of(VERSION + 1) == STEP_PAID);
     }
 }
 // phi^2 + 1/phi^2 = 3 | TRINITY
