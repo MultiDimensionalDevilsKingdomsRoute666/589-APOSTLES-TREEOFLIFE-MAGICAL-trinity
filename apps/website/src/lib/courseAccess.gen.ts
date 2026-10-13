@@ -6,7 +6,7 @@
 export const KIND = "automation" satisfies string;
 export const ID = "course-access" satisfies string;
 export const REPO = "999-multibots-telegraf" satisfies string;
-export const VERSION = 1 satisfies number;
+export const VERSION = 2 satisfies number;
 export const STEP_FREE = 0 satisfies number;
 export const STEP_BOT = 1 satisfies number;
 export const STEP_PAID = 2 satisfies number;

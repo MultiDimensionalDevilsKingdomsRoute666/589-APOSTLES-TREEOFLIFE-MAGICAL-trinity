@@ -637,6 +637,12 @@ section ol {
   color: var(--muted);
 }
 
+/* Courses stand out in the dock: the one link a new reader came for (owner, 2026-10-13). */
+.nav-dock a.nav-courses {
+  color: var(--text);
+  font-weight: 700;
+}
+
 .nav-dock a:hover,
 .nav-dock a.active {
   color: var(--text);

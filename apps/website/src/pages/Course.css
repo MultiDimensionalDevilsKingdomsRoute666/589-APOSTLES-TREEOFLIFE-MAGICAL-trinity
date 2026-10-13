@@ -314,8 +314,10 @@
   text-decoration: none;
 }
 
-.course-crumbs a::before {
-  content: '← ';
+/* Courses > course > module > lesson: the site's shape, the current page last and unlinked. */
+.course-crumbs > * + *::before {
+  content: '› ';
+  color: #555;
 }
 
 .course-lesson-head {
@@ -612,4 +614,124 @@
 }
 .course-ladder-bad {
   color: #ff8a80;
+}
+
+/* The catalog (#/courses) and the header's way back to it. */
+.course-counter {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 8px 14px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  font-size: 14px;
+  color: #fff;
+}
+.course-catalog {
+  list-style: none;
+  margin: 48px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.course-card-link {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #f2f2f2;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.course-card-link:hover {
+  border-color: #fff;
+}
+.course-card.is-open .course-card-link {
+  border-color: #8a8a8a;
+}
+.course-badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid #555;
+  color: #bbb;
+}
+.course-card.is-open .course-badge {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+.course-card.is-club .course-badge {
+  border-color: #c9a24b;
+  color: #c9a24b;
+}
+.course-card-title {
+  font-family: var(--course-display);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.15;
+}
+.course-card-desc {
+  color: #a6a6a6;
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+}
+.course-card-foot {
+  color: #8a8a8a;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.course-card-bar {
+  height: 4px;
+  background: #1c1c1c;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.course-card-bar span {
+  display: block;
+  height: 100%;
+  background: #fff;
+}
+/* The locked course keeps its name: the page that locks a course is the page that sells it. */
+.course-locked-head .course-title {
+  font-size: clamp(32px, 7vw, 88px);
+}
+.course-ladder .course-hero-actions .course-link {
+  color: #a6a6a6;
+}
+/* Paying for the club on the site: one field, one button with the price on it. */
+.course-pay {
+  margin: 24px 0 8px;
+  max-width: 560px;
+}
+.course-pay-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.course-pay-input {
+  flex: 1 1 220px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #555;
+  background: #0b0b0b;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+}
+.course-pay-input:focus {
+  outline: none;
+  border-color: #fff;
+}
+.course-pay .course-btn[disabled] {
+  opacity: 0.6;
+  cursor: progress;
 }

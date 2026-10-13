@@ -1,6 +1,7 @@
 import { useState, useEffect, memo, useCallback } from 'react'
 import { useI18n } from '../i18n/context'
 import LanguageSwitcher from './LanguageSwitcher'
+import { LADDER } from '../lib/courseLadder.generated'
 
 // Док ведёт к цели: карта и спеки идут сразу за именем, дальше — страницы, на
 // которые переехали секции статьи. Записи, начинающиеся с '#/', это маршруты;
@@ -42,6 +43,8 @@ const PAGES: PageLink[] = [
   // number that the game exists to build has a page of its own.
   { href: '#/trinity', en: 'The number', ru: 'Число', note: 'r² = r + 1, the format claim, and the evidence under it', noteRu: 'r² = r + 1, заявление о формате и свидетельства под ним' },
   { href: '#/cases', en: 'Case studies', ru: 'Работы', note: 'Verification runs on other people’s RTL', noteRu: 'Прогоны чужого RTL' },
+  // The catalog first: every course on one page, with what each press will do (owner, 2026-10-13).
+  { href: '#/courses', en: 'Courses', ru: 'Курсы', note: 'Every course, any three free', noteRu: 'Все курсы, любые три бесплатно' },
   { href: '#/t27-basics', en: 'Course: t27 basics', ru: 'Курс: основы t27', note: 'The language itself, 27 lessons', noteRu: 'Сам язык, 27 уроков' },
   { href: '#/course', en: 'Course: FPGA', ru: 'Курс: FPGA', note: 'From zero to a chip, 27 lessons', noteRu: 'С нуля до чипа, 27 уроков' },
   { href: '#/ai-numbers', en: 'Course: AI numbers', ru: 'Курс: ИИ-числа', note: 'How AI chips store numbers, 27 lessons', noteRu: 'Как ИИ-чипы хранят числа, 27 уроков' },
@@ -95,6 +98,8 @@ function scrollToSectionWhenReady(id: string) {
 
 export default memo(function Navigation() {
   const { t, lang } = useI18n()
+  // Courses get their own place in the header, not a line inside "Pages" (owner, 2026-10-13).
+  const coursesLabel = LADDER.say[lang === 'ru' ? 'ru' : 'en'].CATALOG_TITLE
   const [active, setActive] = useState('hero')
   const [menuOpen, setMenuOpen] = useState(false)
   const [pagesOpen, setPagesOpen] = useState(false)
@@ -195,6 +200,7 @@ export default memo(function Navigation() {
             </a>
           )
         })}
+        <a href="#/courses" className="nav-courses" aria-label={coursesLabel}>{coursesLabel}</a>
         <button
           type="button"
           className={`nav-pages-toggle ${pagesOpen ? 'open' : ''}`}
@@ -290,6 +296,7 @@ export default memo(function Navigation() {
                   </a>
                 )
               })}
+              <a href="#/courses" className="nav-courses" onClick={() => setMenuOpen(false)}>{coursesLabel}</a>
               {/* Same source as the desktop disclosure, so the two can't drift apart */}
               {PAGES.map((p) => (
                 <a
