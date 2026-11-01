@@ -1121,7 +1121,7 @@ export function buildSpecCatalogs({ skillSpecs, cronSpecs, agentSpecs = [], func
     i18n: i18nFor(AGENT_SPEC_DIR, agents),
   })
   const triTools = tools.filter((x) => x.family === 'tri-cli'), mcpTools = tools.filter((x) => x.family === 'mcp')
-  const t27TriNames = new Set(triTools.filter((x) => x.repo === 'gHashTag/t27').map((x) => x.id.slice('tri/'.length)))
+  const t27TriNames = new Set(triTools.filter((x) => x.repo === 'gHashTag/t27' && typeof x.id === 'string').map((x) => x.id.slice('tri/'.length)))
   const collisions = triTools.filter((x) => x.repo === 'gHashTag/trinity' && t27TriNames.has(x.qualifiedId.split(':tri/')[1])).map((x) => ({ name: x.qualifiedId.split(':tri/')[1], t27: `gHashTag/t27:tri/${x.qualifiedId.split(':tri/')[1]}`, trinity: x.qualifiedId })).sort((a, b) => (a.name < b.name ? -1 : 1))
   const toolsOut = sortKeys({
     ...base,
