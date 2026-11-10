@@ -30,6 +30,8 @@ concurrency:
 
 jobs:
   dispatch:
+    # Upstream Inngest/Railway secrets only; forks have no INNGEST_EVENT_KEY.
+    if: github.repository == 'Trinity-S-AI-DNA/trinity'
     runs-on: ubuntu-latest
     env:
       INNGEST_URL: https://inngestinngest-production-c468.up.railway.app

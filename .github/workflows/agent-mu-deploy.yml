@@ -134,7 +134,7 @@ jobs:
     name: Deploy to Staging
     needs: [build, security-scan]
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
+    if: github.repository == 'Trinity-S-AI-DNA/trinity' && github.ref != 'refs/heads/main'
     environment: staging
     steps:
     - name: Checkout
@@ -165,7 +165,7 @@ jobs:
     name: Deploy to Production
     needs: [build, security-scan]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.repository == 'Trinity-S-AI-DNA/trinity' && github.ref == 'refs/heads/main'
     environment: production
     steps:
     - name: Checkout
