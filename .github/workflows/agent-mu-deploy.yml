@@ -74,6 +74,7 @@ jobs:
   build:
     name: Build Docker Image
     needs: test
+    if: github.repository == 'Trinity-S-AI-DNA/trinity'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -122,6 +123,7 @@ jobs:
   security-scan:
     name: Security Scan
     needs: build
+    if: github.repository == 'Trinity-S-AI-DNA/trinity'
     runs-on: ubuntu-latest
     steps:
     - name: Run Trivy vulnerability scanner
