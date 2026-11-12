@@ -1608,12 +1608,7 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
-    // Install the binary. `zig build mu-agent` runs the self-healing loop
-    // (tri mu fix --all), so CI uses mu-agent-build instead of that run step.
-    const mu_agent_install = b.addInstallArtifact(mu_agent, .{});
-    b.getInstallStep().dependOn(&mu_agent_install.step);
-    const mu_agent_build = b.step("mu-agent-build", "Build MU self-healing agent daemon without running it");
-    mu_agent_build.dependOn(&mu_agent_install.step);
+    b.installArtifact(mu_agent);
 
     const run_mu = b.addRunArtifact(mu_agent);
     if (b.args) |args| run_mu.addArgs(args);

@@ -62,13 +62,14 @@ jobs:
         fi
 
     - name: Build Test
-      run: zig build mu-agent-build -Doptimize=ReleaseFast
+      run: zig build -Dci=true -Doptimize=ReleaseFast
 
     - name: CLI Validation Test
       run: |
-        # agent-mu-daemon is not a build.zig artifact; mu-agent is.
-        # Do not run `zig build mu-agent` or mu-agent --test here: that starts
-        # the self-healing loop (tri mu fix --all). Just confirm the binary.
+        # agent-mu-daemon is not a build.zig artifact; mu-agent is installed
+        # by zig build -Dci=true. Do not run `zig build mu-agent` or
+        # mu-agent --test here: that starts the self-healing loop
+        # (tri mu fix --all). Just confirm the binary.
         test -x zig-out/bin/mu-agent
 
   build:
